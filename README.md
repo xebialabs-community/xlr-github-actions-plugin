@@ -1,5 +1,6 @@
 # GitHub Actions Integration for XL Release
 
+![Build Status](https://github.com/xebialabs-community/xlr-github-actions-plugin/workflows/build/badge.svg)
 ![GitHub release](https://img.shields.io/github/release/xebialabs-community/xlr-github-actions-plugin.svg)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Github All Releases](https://img.shields.io/github/downloads/xebialabs-community/xlr-github-actions-plugin/total.svg)](https://github.com/xebialabs-community/xlr-github-actions-plugin/releases)

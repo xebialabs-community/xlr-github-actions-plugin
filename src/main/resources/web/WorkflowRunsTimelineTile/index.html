@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <head>
+    <title>Runs in GitHub Actions</title>
+    <script src="../vendor/echarts/4.6.0/echarts.min.js"></script>
+    <script src="../vendor/lodash/4.17.15/lodash.min.js"></script>
+    <script src="../vendor/dayjs/1.9.1/dayjs.min.js"></script>
+    <script src="../vendor/dayjs/1.9.1/duration.js"></script>
+    <script src="../vendor/dayjs/1.9.1/utc.js"></script>
+  </head>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #main,
+    .container {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+  <script>
+    window.addEventListener("xlrelease.load", function() {
+      window.xlrelease.queryTileData(function(response) {
+        let rawData = response.data.data.raw;
+        let runsNumberToShow = response.data.data.runsNumberToShow;
+        dayjs.extend(window.dayjs_plugin_duration);
+        dayjs.extend(window.dayjs_plugin_utc);
+
+        const chart = echarts.init(document.getElementById("main"));
+        const tooltipDateFormat = "MMMM DD YYYY, h:mm:ss a";
+
+        class CONCLUSIONS {
+          static failure = "failure";
+          static success = "success";
+          static canceled = "canceled";
+          static created = "created";
+          static started = "started";
+          static booting = "booting";
+          static queued = "queued";
+          static received = "received";
+        }
+
+        function getMappedData() {
+          const data = rawData.workflow_runs.map((run) => {
+            const {
+              run_number,
+              conclusion,
+              status,
+              html_url,
+              created_at,
+              updated_at,
+              head_commit,
+              head_branch,
+              id,
+            } = run;
+            return {
+              name: run_number,
+              value: getTimeDiff(created_at, updated_at),
+              itemStyle: {
+                color: getBarColor(conclusion),
+              },
+              created_by: head_commit.author.name,
+              branch_name: head_branch,
+              url: html_url,
+              conclusion: conclusion || status,
+              id,
+              created_at,
+              updated_at,
+            };
+          });
+          return _.orderBy(data, "name").slice(
+            data.length > runsNumberToShow ? data.length - runsNumberToShow : 0
+          );
+        }
+
+        const option = {
+          tooltip: {
+            trigger: "item",
+            backgroundColor: 'rgba(0,0,0,0.9)',
+            padding: 15,
+            formatter: function (params) {
+              const { name, value, data } = params;
+              const {
+                conclusion,
+                created_at,
+                updated_at,
+                created_by,
+                branch_name,
+              } = data;
+              return `Run Number: ${name} <br>
+                    Duration: ${getMinutes(value)} <br>
+                    Conclusion: ${capitalize(conclusion)} <br>
+                    Started At: ${
+                      created_at
+                        ? dayjs(created_at).format(tooltipDateFormat)
+                        : "--:--"
+                    } <br>
+                    Finished At: ${
+                      updated_at
+                        ? dayjs(updated_at).format(tooltipDateFormat)
+                        : "--:--"
+                    } <br>
+                    Created By: ${created_by} <br>
+                    Branch: ${branch_name}`;
+            },
+          },
+          xAxis: {
+            type: "value",
+            axisLabel: {
+              formatter: function (value) {
+                return getMinutes(value);
+              },
+            },
+            name: "Duration",
+            nameTextStyle: {
+              fontWeight: "bold",
+            },
+          },
+          yAxis: {
+            type: "category",
+            data: getMappedData().map((run) => "Run " + run.name),
+            axisLabel: {
+              fontSize: "14",
+              fontWeight: "bold",
+            },
+          },
+          series: [
+            {
+              type: "bar",
+              data: getMappedData(),
+              label: {
+                show: true,
+                formatter: function (params) {
+                  const conclusion = params.data.conclusion;
+                  return capitalize(conclusion);
+                },
+                color: "black",
+                align: "left",
+                fontSize: "14",
+                fontStyle: "italic",
+              },
+              itemStyle: {
+                color: "blue",
+              },
+              barMinHeight: 5,
+            },
+          ],
+        };
+
+        chart.setOption(option);
+
+        function getMinutes(seconds) {
+          return dayjs.utc(seconds).format("HH:mm:ss");
+        }
+
+        function capitalize(text) {
+          return text.charAt(0).toUpperCase() + text.slice(1);
+        }
+
+        function getTimeDiff(then, now, format) {
+          const ms = dayjs(now).diff(dayjs(then));
+          const d = dayjs.duration(ms);
+          if (format === "date") {
+            return Math.floor(d.asHours()) + dayjs.utc(ms).format("H:mm:ss");
+          } else {
+            return ms;
+          }
+        }
+
+        function getBarColor(conclusion) {
+          switch (conclusion) {
+            case CONCLUSIONS.failure:
+              return "#db4545";
+            case CONCLUSIONS.success:
+              return "#39aa56";
+            case CONCLUSIONS.canceled:
+              return "#9d9d9d";
+            case CONCLUSIONS.created:
+            case CONCLUSIONS.booting:
+            case CONCLUSIONS.queued:
+            case CONCLUSIONS.started:
+            case CONCLUSIONS.received:
+              return "#cdb62c";
+            default:
+              return "#3eaaaf";
+          }
+        }
+
+        chart.on("click", function (params) {
+          const url = _.get(params, "data.url");
+          if (url) {
+            window.open(url, "_blank");
+          }
+        });
+
+        window.addEventListener("resize", () => {
+          chart.resize();
+        });
+      });
+    });
+  </script>
+  <body>
+    <div class="container">
+      <div id="main"></div>
+    </div>
+  </body>
+</html>

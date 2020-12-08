@@ -1,0 +1,68 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!--
+
+ Copyright 2020 XEBIALABS
+
+ Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+-->
+<synthetic xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.xebialabs.com/deployit/synthetic" xsi:schemaLocation="http://www.xebialabs.com/deployit/synthetic synthetic.xsd">
+  <!-- Http Connections -->
+  <type type="githubActions.Server" extends="configuration.HttpConnection" label="GitHub Actions: Server">
+    <property name="authenticationMethod" hidden="true" kind="enum" enum-class="com.xebialabs.xlrelease.domain.configuration.HttpConnection$AuthenticationMethod" default="None">
+      <enum-values>
+        <value>None</value>
+      </enum-values>
+    </property>
+    <property name="username" hidden="true" default="NOTUSED"/>
+    <property name="password" hidden="true" default="NOTUSED"/>
+    <property name="domain" hidden="true" default="NOTUSED"/>
+    <property name="accessToken" password="true" description="Personal access token"/>
+  </type>
+
+  <!-- Python Scripts -->
+  <type type="githubActions.Task" extends="xlrelease.PythonScript" virtual="true">
+    <property name="iconLocation" hidden="true" default="githubActions/github.png"/>
+    <property name="taskColor" hidden="true" default="#24292E"/>
+    <property name="server" category="input" kind="ci" referenced-type="githubActions.Server" required="true"/>
+  </type>
+
+  <!-- Tasks -->
+  <type type="githubActions.CheckWorkflowRun" label="GitHub Actions: Check Workflow Run" extends="githubActions.Task">
+      <property name="owner" category="input" required="true"/>
+      <property name="repository" category="input" required="true"/>
+      <property name="workflowId" category="input" required="true" label="Workflow ID"/>
+      <property name="runIdScript" category="script" kind="integer" required="false"/>
+      <property name="runId" category="output" kind="string" label="Workflow Run ID"/>
+  </type>
+
+  <type type="githubActions.TriggerWorkflowRun" label="GitHub Actions: Trigger Workflow Run" extends="githubActions.Task">
+      <property name="owner" category="input" required="true"/>
+      <property name="repository" category="input" required="true"/>
+      <property name="workflowId" category="input" required="true" label="Workflow ID"/>
+      <property name="ref" category="input" required="true" description="The reference of the workflow run. The reference can be a branch, tag, or a commit SHA."/>
+      <property name="inputs" category="input" required="false" description="Comma-separated keys and values configured in the workflow file. The maximum number of properties is 10. Any default properties configured in the workflow file will be used when inputs are omitted."/>
+      <property name="triggered" category="script" kind="boolean" required="false" default="false"/>
+      <property name="runIdScript" category="script" kind="integer" required="false"/>
+      <property name="runId" category="output" kind="string" label="Workflow Run ID"/>
+  </type>
+
+  <type type="githubActions.Tile" extends="xlrelease.Tile" virtual="true">
+      <property default="release,folder,global" hidden="true" name="supportedScopes" kind="list_of_string"/>
+      <property name="server" category="input" kind="ci" referenced-type="githubActions.Server" required="true"/>
+  </type>
+
+    <type type="githubActions.WorkflowRunsTimelineTile" label="GitHub Actions Workflow Runs Timeline" extends="githubActions.Tile"
+          description="Shows workflow run history for a given workflow definition">
+        <property name="uri" hidden="true" default="WorkflowRunsTimelineTile/index.html"/>
+        <property name="title" description="Tile title" default="Latest Workflow Runs"/>
+        <property name="width" kind="integer" default="2"/>
+        <property name="height" kind="integer" default="2"/>
+        <property name="owner" category="input" required="true"/>
+        <property name="repository" category="input" required="true"/>
+        <property name="workflowId" category="input" required="true" label="Workflow ID"/>
+        <property name="count" kind="integer" required="true" default="25" description="The number of latest workflow runs to visualize" category="input"/>
+    </type>
+</synthetic>

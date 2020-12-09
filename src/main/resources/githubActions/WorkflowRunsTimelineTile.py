@@ -1,5 +1,4 @@
 import json
-import requests
 
 headers = {
     "Accept": "application/json",
@@ -7,16 +6,28 @@ headers = {
     "Authorization": "Token {}".format(server["accessToken"]),
 }
 
-r = requests.get(
-    server["url"] + "/repos/{}/{}/actions/workflows/{}/runs?per_page={}".format(owner, repository, workflowId, count),
-    headers=headers,
-    verify=False
+request = HttpRequest(
+    {
+        "url": server["url"],
+        "authenticationMethod": "None",
+        "username": None,
+        "password": None,
+        "domain": None,
+        "proxyHost": server["proxyHost"],
+        "proxyPort": server["proxyPort"],
+        "proxyUsername": server["proxyUsername"],
+        "proxyPassword": server["proxyPassword"],
+    }
 )
 
-if not r.ok:
-    raise Exception("GitHub Responded With HTTP Status Code {}".format(r.status_code))
+response = request.get(
+    "/repos/{}/{}/actions/workflows/{}/runs?per_page={}".format(
+        owner, repository, workflowId, count
+    ),
+    headers=headers,
+)
 
-data = {
-    "raw": r.json(),
-    "runsNumberToShow": count
-}
+if not response.isSuccessful():
+    raise Exception(response.status, response.headers, response.response)
+
+data = {"raw": json.loads(response.response), "runsNumberToShow": count}

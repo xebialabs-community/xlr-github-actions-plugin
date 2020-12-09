@@ -7,63 +7,88 @@ headers = {
     "Authorization": "Token {}".format(server["accessToken"]),
 }
 
+request = HttpRequest(
+    {
+        "url": server["url"],
+        "authenticationMethod": "None",
+        "username": None,
+        "password": None,
+        "domain": None,
+        "proxyHost": server["proxyHost"],
+        "proxyPort": server["proxyPort"],
+        "proxyUsername": server["proxyUsername"],
+        "proxyPassword": server["proxyPassword"],
+    }
+)
+
 if not triggered:
     body = {
         "ref": ref,
         # "inputs": inputs
     }
-    r = requests.post(
-        server["url"] + "/repos/{}/{}/actions/workflows/{}/dispatches".format(owner, repository, workflowId),
-        json=body,
+
+    response = request.post(
+        "/repos/{}/{}/actions/workflows/{}/dispatches".format(
+            owner, repository, workflowId
+        ),
+        body=json.dumps(body),
         headers=headers,
-        verify=False
     )
-    if not r.ok:
-        raise Exception("GitHub Responded With HTTP Status Code {}".format(r.status_code))
+
+    if not response.isSuccessful():
+        raise Exception(response.status, response.headers, response.response)
     else:
         triggered = True
         task.setStatusLine("Triggering...")
         task.schedule("githubActions/TriggerWorkflowRun.py", 3)
 
 elif runIdScript is None and triggered:
-    r = requests.get(
-        server["url"] + "/repos/{}/{}/actions/workflows/{}/runs?per_page=1".format(owner, repository, workflowId),
+    response = request.get(
+        "/repos/{}/{}/actions/workflows/{}/runs?per_page=1".format(
+            owner, repository, workflowId
+        ),
         headers=headers,
-        verify=False
     )
-    if not r.ok:
-        raise Exception("GitHub Responded With HTTP Status Code {}".format(r.status_code))
+
+    if not response.isSuccessful():
+        raise Exception(response.status, response.headers, response.response)
     else:
-        response = r.json()
-        runIdScript = response["workflow_runs"][0]["id"]
+        runIdScript = json.loads(response.response)["workflow_runs"][0]["id"]
         task.schedule("githubActions/TriggerWorkflowRun.py", 3)
 
 elif runIdScript is not None and triggered:
-    r = requests.get(
-        server["url"] + "/repos/{}/{}/actions/runs/{}?per_page=1".format(owner, repository, runIdScript),
+    response = request.get(
+        "/repos/{}/{}/actions/runs/{}?per_page=1".format(
+            owner, repository, runIdScript
+        ),
         headers=headers,
-        verify=False
     )
-    if not r.ok:
-        raise Exception("GitHub Responded With HTTP Status Code {}".format(r.status_code))
+
+    if not response.isSuccessful():
+        raise Exception(response.status, response.headers, response.response)
     else:
-        response = r.json()
-        status = response["status"]
-        
+        data = json.loads(response.response)
+        status = data["status"]
+
         if status == "completed":
             runId = runIdScript
-            conclusion = response["conclusion"]
-            html_url = response["html_url"]
+            conclusion = data["conclusion"]
+            html_url = data["html_url"]
             if conclusion == "success":
                 task.setStatusLine(status.title())
-                print("GitHub Actions [workflow run {}]({}) conclusion: {}".format(runIdScript, html_url, conclusion.title()))
+                print(
+                    "GitHub Actions [workflow run {}]({}) conclusion: {}".format(
+                        runIdScript, html_url, conclusion.title()
+                    )
+                )
                 # No more LOC after this, so task will complete
             else:
                 task.setStatusLine(status.title())
-                raise Exception("GitHub Actions [workflow run {}]({}) conclusion: {}".format(runIdScript, html_url, conclusion.title()))
+                raise Exception(
+                    "GitHub Actions [workflow run {}]({}) conclusion: {}".format(
+                        runIdScript, html_url, conclusion.title()
+                    )
+                )
         else:
             task.setStatusLine(status.title().replace("_", " ") + "...")
             task.schedule("githubActions/TriggerWorkflowRun.py", 3)
-
-
- 

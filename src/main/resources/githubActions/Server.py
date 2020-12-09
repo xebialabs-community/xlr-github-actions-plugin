@@ -1,4 +1,15 @@
-import requests
+# get the configuration properties from the UI
+params = {
+    "url": configuration.url,
+    "authenticationMethod": "None",
+    "username": None,
+    "password": None,
+    "domain": None,
+    "proxyHost": configuration.proxyHost,
+    "proxyPort": configuration.proxyPort,
+    "proxyUsername": configuration.proxyUsername,
+    "proxyPassword": configuration.proxyPassword,
+}
 
 headers = {
     "Accept": "application/json",
@@ -6,12 +17,8 @@ headers = {
     "Authorization": "Token {}".format(configuration.accessToken),
 }
 
-r = requests.get(
-    configuration.url,
-    json="",
-    headers=headers,
-    verify=False
-)
+request = HttpRequest(params)
+response = request.get("/", headers=headers)
 
-if not r.status_code == requests.codes.ok:
-    raise Exception("GitHub Responded With HTTP Status Code {}".format(r.status_code))
+if not response.isSuccessful():
+    raise Exception(response.status, response.headers, response.response)

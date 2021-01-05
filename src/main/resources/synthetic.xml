@@ -16,6 +16,7 @@
         <value>None</value>
       </enum-values>
     </property>
+    <property name="url" default="https://api.github.com" description="Base URL for the GitHub installation API (e.g., https://api.github.com)"/>
     <property name="username" hidden="true" default="NOTUSED"/>
     <property name="password" hidden="true" default="NOTUSED"/>
     <property name="domain" hidden="true" default="NOTUSED"/>
